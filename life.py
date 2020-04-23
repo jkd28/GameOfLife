@@ -14,12 +14,15 @@ class Application(tk.Frame):
         self.grid(row=0, column=0)
         self.size_x = 20
         self.size_y = 20
+        self.title_font = font.Font(family="Helvetica", size=14)
+
+        # Initialize game state
         self.game_grid_cells = []
         self.intro_frame = None
         self.game_frame = None
         self.start_button = None
         self.reset_button = None
-        self.title_font = font.Font(family="Helvetica", size=14)
+        self.is_running_simulation = False
 
         self.initialize_ui()
 
@@ -35,14 +38,13 @@ class Application(tk.Frame):
         prompt.pack(side=tk.BOTTOM)
 
         # Setup buttons to kick off and reset the simulation
-        self.start_button = tk.Button(self.master, text="Start Game", command=self.launch())
+        self.start_button = tk.Button(self.master, text="Start Game", command=self.launch)
         self.start_button.grid(row=1, column=1, sticky=tk.E)
         self.reset_button = tk.Button(self.master, text="Reset", command=self.reset)
         self.reset_button.grid(row=1, column=2, sticky=tk.W)
 
         # initialize the board grid
         self.create_game_grid()
-        return
 
     def create_game_grid(self):
         self.game_frame = tk.Frame(
@@ -53,26 +55,39 @@ class Application(tk.Frame):
             relief=tk.GROOVE
         )
         self.game_frame.grid(row=2, column=0, columnspan=4)
-        self.game_grid_cells = [
-            [tk.Button(self.game_frame, bg="white", width=2, height=1) for i in range(self.size_x + 2)] for j in
-            range(self.size_y + 2)]
+        self.game_grid_cells = [[tk.Button(self.game_frame, bg="white", width=2, height=1) for i in range(self.size_x + 2)] for j in range(self.size_y + 2)]
         # creates 2d array of buttons for grid
         for i in range(1, self.size_y + 1):
             for j in range(1, self.size_x + 1):
                 self.game_grid_cells[i][j].grid(row=i, column=j, sticky=tk.W + tk.E)
-                self.game_grid_cells[i][j]['command'] = lambda i=i, j=j: self.cell_toggle(i, j)
+                self.game_grid_cells[i][j]['command'] = lambda i=i, j=j: self.toggle_cell_state(i, j)
 
     def launch(self):
-        print("LAUNCH")
+        # Setup
+        print('LAUNCHING SIMULATION....')
+        self.is_running_simulation = True
+        print('Simulation running: ' + str(self.is_running_simulation))
+        print('Disabling all cells...')
+        self.disable_all_cells()
+        print('All cells disabled.')
+
+        # TODO: Game implementation
 
     def reset(self):
-        print("RESET")
+        print('RESET')
+        if self.is_running_simulation:
+            print('Stopping simulation.')
+            self.is_running_simulation = False
+
         for row in self.game_grid_cells:
             for cell in row:
                 if cell['bg'] == Application.LIVE:
                     cell['bg'] = Application.DEAD
+        print('All cells reset to DEAD. Enabling all cells...')
+        self.enable_all_cells()
+        print('All cells enabled.')
 
-    def cell_toggle(self, row, column):
+    def toggle_cell_state(self, row, column):
         to_toggle = self.game_grid_cells[row][column]
         initial_state = to_toggle['bg']
         new_state = ""
@@ -82,7 +97,17 @@ class Application(tk.Frame):
             new_state = Application.DEAD
 
         to_toggle['bg'] = new_state
-        print("grid_cell at " + str(row) + " : " + str(column) + " toggle from " + initial_state + "-->" + new_state)
+        print('grid_cell at ' + str(row) + " : " + str(column) + ' toggle ' + initial_state + '-->' + new_state)
+
+    def disable_all_cells(self):
+        for row in self.game_grid_cells:
+            for cell in row:
+                cell['state'] = tk.DISABLED
+
+    def enable_all_cells(self):
+        for row in self.game_grid_cells:
+            for cell in row:
+                cell['state'] = tk.NORMAL
 
 
 def start_application():
