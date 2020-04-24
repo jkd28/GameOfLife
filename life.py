@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import font
+from copy import deepcopy
 
 class Application(tk.Frame):
     DEAD = "white"
@@ -11,8 +12,8 @@ class Application(tk.Frame):
 
         # Initialize UI settings
         self.grid(row=0, column=0)
-        self.size_x = 20
-        self.size_y = 20
+        self.size_x = 50
+        self.size_y = 30
         self.title_font = font.Font(family="Helvetica", size=14)
 
         # Initialize game state
@@ -22,8 +23,8 @@ class Application(tk.Frame):
         self.start_button = None
         self.reset_button = None
         self.is_running_simulation = False
-        self.tick_delay_ms = 500
-        self.max_ticks = 10
+        self.tick_delay_ms = 200
+        self.max_ticks = 100
         self.num_ticks = 0
 
         self.initialize_ui()
@@ -77,17 +78,25 @@ class Application(tk.Frame):
     def tick(self):
         print('Ticking: tick {}'.format(self.num_ticks))
         self.num_ticks += 1
+
+        # Determine the operations to be performed for generational advancement
+        to_kill = []
+        to_revive = []
         for current_row_index, row in enumerate(self.game_grid_cells):
             for current_column_index, cell in enumerate(row):
                 live_neighbors = self.get_live_neighbors(current_row_index, current_column_index)
+
                 if self.cell_is_live(current_row_index, current_column_index):
-                    # print('Live cell at ({0},{1})'.format(current_column_index,current_row_index))
                     if live_neighbors < 2 or live_neighbors > 3:
-                        self.kill_cell(current_row_index, current_column_index)
+                        to_kill.append((current_row_index, current_column_index))
                 else:
-                    # print('Dead cell at ({0},{1})'.format(current_column_index,current_row_index))
                     if live_neighbors == 3:
-                        self.revive_cell(current_row_index,current_column_index)
+                        to_revive.append((current_row_index,current_column_index))
+
+        # Advance generation
+        self.kill_cells(to_kill)
+        self.revive_cells(to_revive)
+
         if self.num_ticks <= self.max_ticks:
             self.master.after(self.tick_delay_ms, self.tick)
 
@@ -174,9 +183,19 @@ class Application(tk.Frame):
     def cell_is_live(self, row, col):
         return self.game_grid_cells[row][col]['bg'] == Application.LIVE
 
+    def kill_cells(self, to_kill):
+        for cell in to_kill:
+            self.kill_cell(cell[0], cell[1])
+        return
+
     def kill_cell(self, row, col):
         print('DEATH :: ({0},{1})'.format(col, row))
         self.game_grid_cells[row][col]['bg'] = Application.DEAD
+        return
+
+    def revive_cells(self, to_revive):
+        for cell in to_revive:
+            self.revive_cell(cell[0], cell[1])
         return
 
     def revive_cell(self, row, col):
