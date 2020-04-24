@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import font
 
-
 class Application(tk.Frame):
     DEAD = "white"
     LIVE = "black"
@@ -23,6 +22,9 @@ class Application(tk.Frame):
         self.start_button = None
         self.reset_button = None
         self.is_running_simulation = False
+        self.tick_delay_ms = 500
+        self.max_ticks = 10
+        self.num_ticks = 0
 
         self.initialize_ui()
 
@@ -65,30 +67,29 @@ class Application(tk.Frame):
     def launch(self):
         # Setup
         print('LAUNCHING SIMULATION....')
-        self.is_running_simulation = True
-        print('Simulation running: ' + str(self.is_running_simulation))
         self.disable_all_cells()
+        # Run simulation
+        self.tick()
 
-        # TODO: Game implementation
-        tick_count = 0
-        ticks_exceeded = False
-        while self.is_running_simulation:
-            if tick_count >= 100:
-                ticks_exceeded = True
-                break
-            self.tick()
-            tick_count += 1
-
-        if ticks_exceeded:
-            print('Exceeded 100 ticks. Stopping Simulation')
+        print('Simulation complete.')
         self.enable_all_cells()
 
     def tick(self):
-        for row_count, row in enumerate(self.game_grid_cells):
-            for column_count, cell in enumerate(row):
-                live_neighbors = self.get_live_neighbors(row_count, column_count)
-                if not live_neighbors == 0:
-                    print('GridCell ' + str(row_count) + ' : ' + str(column_count) + ' -- Live neighbors: ' + str(live_neighbors))
+        print('Ticking: tick {}'.format(self.num_ticks))
+        self.num_ticks += 1
+        for current_row_index, row in enumerate(self.game_grid_cells):
+            for current_column_index, cell in enumerate(row):
+                live_neighbors = self.get_live_neighbors(current_row_index, current_column_index)
+                if self.cell_is_live(current_row_index, current_column_index):
+                    # print('Live cell at ({0},{1})'.format(current_column_index,current_row_index))
+                    if live_neighbors < 2 or live_neighbors > 3:
+                        self.kill_cell(current_row_index, current_column_index)
+                else:
+                    # print('Dead cell at ({0},{1})'.format(current_column_index,current_row_index))
+                    if live_neighbors == 3:
+                        self.revive_cell(current_row_index,current_column_index)
+        if self.num_ticks <= self.max_ticks:
+            self.master.after(self.tick_delay_ms, self.tick)
 
     def get_live_neighbors(self, row, column):
         # Calculate surrounding indices, including wrap-around
@@ -125,7 +126,6 @@ class Application(tk.Frame):
                 live_count += 1
         return live_count
 
-
     def reset(self):
         print('RESET')
         if self.is_running_simulation:
@@ -150,7 +150,7 @@ class Application(tk.Frame):
             new_state = Application.DEAD
 
         to_toggle['bg'] = new_state
-        print('grid_cell at ' + str(row) + " : " + str(column) + ' toggle ' + initial_state + '-->' + new_state)
+        print('grid_cell at ' + str(column) + " : " + str(row) + ' toggle ' + initial_state + '-->' + new_state)
         return
 
     def disable_all_cells(self):
@@ -167,6 +167,19 @@ class Application(tk.Frame):
             for cell in row:
                 cell['state'] = tk.NORMAL
         print('All cells enabled.')
+        return
+
+    def cell_is_live(self, row, col):
+        return self.game_grid_cells[row][col]['bg'] == Application.LIVE
+
+    def kill_cell(self, row, col):
+        print('DEATH :: ({0},{1})'.format(col, row))
+        self.game_grid_cells[row][col]['bg'] = Application.DEAD
+        return
+
+    def revive_cell(self, row, col):
+        print('REVIVAL :: ({0},{1})'.format(col, row))
+        self.game_grid_cells[row][col]['bg'] = Application.LIVE
         return
 
 
