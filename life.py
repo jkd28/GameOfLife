@@ -68,11 +68,11 @@ class Application(tk.Frame):
         # Setup
         print('LAUNCHING SIMULATION....')
         self.disable_all_cells()
-        # Run simulation
-        self.tick()
-
-        print('Simulation complete.')
-        self.enable_all_cells()
+        # Run simulation if not already run
+        if self.num_ticks < self.max_ticks:
+            self.tick()
+        else:
+            print('Simulation already ran. Aborted launch.')
 
     def tick(self):
         print('Ticking: tick {}'.format(self.num_ticks))
@@ -128,6 +128,8 @@ class Application(tk.Frame):
 
     def reset(self):
         print('RESET')
+        self.num_ticks = 0
+
         if self.is_running_simulation:
             print('Stopping simulation.')
             self.is_running_simulation = False
@@ -157,7 +159,7 @@ class Application(tk.Frame):
         print('Disabling all cells...')
         for row in self.game_grid_cells:
             for cell in row:
-                cell['state'] = tk.DISABLED
+                cell.config(state=tk.DISABLED)
         print('All cells disabled.')
         return
 
